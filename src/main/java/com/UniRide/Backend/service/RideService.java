@@ -14,6 +14,8 @@ public class RideService {
 
   private final OlaService olaService;
 
+  private static final String P2P = "p2p";
+
   @Autowired
   public RideService(OlaService olaService) {
     this.olaService = olaService;
@@ -23,20 +25,35 @@ public class RideService {
    * Returns all ride options for the given vehicleType from multiple providers.
    * For now, only Ola is integrated.
    */
-  public List<RideOption> getAllRideOptions(String vehicleType) {
+  public List<RideOption> getAllRideOptions(double pickupLat, double pickupLng, Double dropLat, Double dropLng, String vehicleType) {
     List<RideOption> rideOptions = new ArrayList<>();
 
-    // Hard-coded pickup for example; in real scenario, pass these from the controller or method params
-    double pickupLat = 12.8953741;
-    double pickupLng = 77.5859018;
+    // 1. Fetch ride options from Ola
+    rideOptions.addAll(getOlaRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType));
+
+    // 2. (Future) Fetch from Uber
+    // rideOptions.addAll(getUberRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType));
+
+    // 3. (Future) Fetch from Rapido
+    // rideOptions.addAll(getRapidoRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType));
+
+    return rideOptions;
+  }
+
+
+  /**
+   * Fetches ride options from Ola for the given vehicleType.
+   */
+  private List<RideOption> getOlaRideOptions(double pickupLat, double pickupLng, Double dropLat, Double dropLng, String vehicleType) {
+    List<RideOption> olaRideOptions = new ArrayList<>();
 
     // Call Ola
     OlaRideAvailabilityResponse olaResponse = olaService.getRideAvailability(
         pickupLat,
         pickupLng,
-        null,    // dropLat
-        null,    // dropLng
-        "p2p",   // service_type
+        dropLat,
+        dropLng,
+        P2P,   // service_type
         vehicleType  // category (e.g. "auto", "mini", etc.)
     );
 
@@ -44,10 +61,20 @@ public class RideService {
       for (OlaRideAvailabilityResponse.Category category : olaResponse.getCategories()) {
         // Only process the category if it matches our vehicleType filter
         if (vehicleType.equalsIgnoreCase(category.getId())) {
-          // For simplicity, we’ll assume we don’t have an explicit fare range
-          // If a drop location were provided, we could parse the 'ride_estimate' object
-          double estimatedMinFare = olaResponse.getRideEstimate().getMinAmount();
-          double estimatedMaxFare = olaResponse.getRideEstimate().getMaxAmount();
+          double estimatedMinFare = 0.0;
+          double estimatedMaxFare = 0.0;
+
+          // Check if ride estimates are available and iterate over them
+          if (olaResponse.getRideEstimate() != null && !olaResponse.getRideEstimate().isEmpty()) {
+            for (OlaRideAvailabilityResponse.RideEstimate estimate : olaResponse.getRideEstimate()) {
+              if (vehicleType.equalsIgnoreCase(estimate.getCategory())) {
+                estimatedMinFare = estimate.getMinAmount();
+                estimatedMaxFare = estimate.getMaxAmount();
+                break; // Found the matching estimate, so exit the loop
+              }
+            }
+          }
+
           int eta = category.getEta(); // e.g., 1 minute
 
           // Create a unified RideOption object
@@ -59,13 +86,11 @@ public class RideService {
               eta,
               4
           );
-          rideOptions.add(option);
+          olaRideOptions.add(option);
         }
       }
     }
 
-    // Here is where you'd also call UberService, RapidoService, etc.
-
-    return rideOptions;
+    return olaRideOptions;
   }
 }
