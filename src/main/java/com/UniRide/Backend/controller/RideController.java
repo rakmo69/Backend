@@ -21,12 +21,17 @@ public class RideController {
   }
 
   /**
-   * GET /api/ride/options?vehicleType=auto
+   * GET /api/ride/options?pickupLat=12.8953741&pickupLng=77.5859018&dropLat=12.9560643&dropLng=77.6514801&vehicleType=auto
    *
-   * Returns all ride options for the given vehicle type (e.g. "auto", "mini").
+   * Returns all ride options for the given vehicle type and location parameters.
    */
   @GetMapping("/options")
-  public List<RideOption> getRideOptions(@RequestParam String vehicleType) {
-    return rideService.getAllRideOptions(vehicleType);
+  public List<RideOption> getRideOptions(
+      @RequestParam double pickupLat,
+      @RequestParam double pickupLng,
+      @RequestParam(required = false) Double dropLat,
+      @RequestParam(required = false) Double dropLng,
+      @RequestParam String vehicleType) {
+    return rideService.getAllRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType);
   }
 }

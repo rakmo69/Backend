@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class OlaService {
-  // For example, https://devapi.olacabs.com
+  // The Ola Base URL
   @Value("${ola.api.base-url}")
   private String olaBaseUrl;
 
@@ -22,41 +22,50 @@ public class OlaService {
   @Value("${ola.api.bearer-token}")
   private String bearerToken;
 
+  private static final String PICKUP_LATITUDE = "pickup_lat";
+  private static final String PICKUP_LONGITUDE = "pickup_lng";
+  private static final String DROP_LATITUDE = "drop_lat";
+  private static final String DROP_LONGITUDE = "drop_lng";
+  private static final String SERVICE_TYPE = "service_type";
+  private static final String CATEGORY = "category";
+  private static final String X_APP_TOKEN = "x-app-token";
+
+
   public OlaRideAvailabilityResponse getRideAvailability(
-      double pickupLat,
-      double pickupLng,
-      Double dropLat,         // use Double so it's optional
-      Double dropLng,
+      double pickupLatitude,
+      double pickupLongitude,
+      Double dropLatitude,         // use Double so it's optional
+      Double dropLongitude,
       String serviceType,
       String category
   ) {
     // Build the URL with query parameters
     UriComponentsBuilder builder = UriComponentsBuilder
         .fromHttpUrl(olaBaseUrl + "/v1/products")
-        .queryParam("pickup_lat", pickupLat)
-        .queryParam("pickup_lng", pickupLng);
+        .queryParam(PICKUP_LATITUDE, pickupLatitude)
+        .queryParam(PICKUP_LONGITUDE, pickupLongitude);
 
     // Only add drop params if provided
-    if (dropLat != null && dropLng != null) {
-      builder.queryParam("drop_lat", dropLat)
-          .queryParam("drop_lng", dropLng);
+    if (dropLatitude != null && dropLongitude != null) {
+      builder.queryParam(DROP_LATITUDE, dropLatitude)
+          .queryParam(DROP_LONGITUDE, dropLongitude);
     }
 
     // service_type could be "p2p", "rental", or "outstation"
     if (serviceType != null) {
-      builder.queryParam("service_type", serviceType);
+      builder.queryParam(SERVICE_TYPE, serviceType);
     }
 
     // category could be "auto", "micro", "mini", etc.
     if (category != null) {
-      builder.queryParam("category", category);
+      builder.queryParam(CATEGORY, category);
     }
 
     String url = builder.toUriString();
 
     // Set headers
     HttpHeaders headers = new HttpHeaders();
-    headers.set("x-app-token", xAppToken);
+    headers.set(X_APP_TOKEN, xAppToken);
     // If you want to send a bearer token for user-specific data
     if (bearerToken != null && !bearerToken.isEmpty()) {
       headers.setBearerAuth(bearerToken);
