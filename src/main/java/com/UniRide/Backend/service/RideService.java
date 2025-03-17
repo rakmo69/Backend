@@ -2,19 +2,20 @@ package com.UniRide.Backend.service;
 
 import com.UniRide.Backend.model.Cabs.OlaRideAvailabilityResponse;
 import com.UniRide.Backend.model.RideOption;
-import com.UniRide.Backend.service.Cabs.OlaService;
+import com.UniRide.Backend.service.Cabs.Ola.OlaService;
+import com.UniRide.Backend.service.Cabs.Ola.ServiceType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.UniRide.Backend.service.Cabs.ServiceProvider.OLA;
+
 @Service
 public class RideService {
 
   private final OlaService olaService;
-
-  private static final String P2P = "p2p";
 
   @Autowired
   public RideService(OlaService olaService) {
@@ -53,7 +54,7 @@ public class RideService {
         pickupLng,
         dropLat,
         dropLng,
-        P2P,   // service_type
+        ServiceType.P2P,   // service_type
         vehicleType  // category (e.g. "auto", "mini", etc.)
     );
 
@@ -79,7 +80,7 @@ public class RideService {
 
           // Create a unified RideOption object
           RideOption option = new RideOption(
-              "Ola",
+              OLA,
               vehicleType,
               estimatedMinFare,
               estimatedMaxFare,

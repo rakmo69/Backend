@@ -13,7 +13,7 @@ public class constants {
     public static final int OTP_LENGTH = 6; // OTP length
     public static final int OTP_EXPIRY_MINUTES = 3; // OTP expiry time in minutes
 
-    //twilo related constants
+    //twilio related constants
     public static final String TWILIO_ACCOUNT_SID = "your_account_sid";
     public static final String TWILIO_AUTH_TOKEN = "your_auth_token";
     public static final String TWILIO_PHONE_NUMBER = "twilo no."; // Replace with Your Twilio phone number
