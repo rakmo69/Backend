@@ -1,4 +1,4 @@
-package com.UniRide.Backend.service.Cabs;
+package com.UniRide.Backend.service.Cabs.Ola;
 
 import com.UniRide.Backend.model.Cabs.OlaRideAvailabilityResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +36,7 @@ public class OlaService {
       double pickupLongitude,
       Double dropLatitude,         // use Double so it's optional
       Double dropLongitude,
-      String serviceType,
+      ServiceType serviceType,
       String category
   ) {
     // Build the URL with query parameters
@@ -53,7 +53,7 @@ public class OlaService {
 
     // service_type could be "p2p", "rental", or "outstation"
     if (serviceType != null) {
-      builder.queryParam(SERVICE_TYPE, serviceType);
+      builder.queryParam(SERVICE_TYPE, serviceType.getValue());
     }
 
     // category could be "auto", "micro", "mini", etc.
