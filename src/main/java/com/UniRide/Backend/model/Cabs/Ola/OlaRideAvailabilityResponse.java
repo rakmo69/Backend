@@ -1,4 +1,4 @@
-package com.UniRide.Backend.model.Cabs;
+package com.UniRide.Backend.model.Cabs.Ola;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

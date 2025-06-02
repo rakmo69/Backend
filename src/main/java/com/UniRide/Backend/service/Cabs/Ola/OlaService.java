@@ -1,6 +1,6 @@
 package com.UniRide.Backend.service.Cabs.Ola;
 
-import com.UniRide.Backend.model.Cabs.OlaRideAvailabilityResponse;
+import com.UniRide.Backend.model.Cabs.Ola.OlaRideAvailabilityResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
