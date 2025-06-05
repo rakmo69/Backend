@@ -1,12 +1,14 @@
 package com.UniRide.Backend.service;
 
 import com.UniRide.Backend.model.Cabs.Ola.OlaRideAvailabilityResponse;
+import com.UniRide.Backend.model.Cabs.Rapido.RapidoFareEstimateResponse;
 import com.UniRide.Backend.model.Cabs.Uber.UberPriceEstimatesResponse;
 import com.UniRide.Backend.model.Cabs.Uber.UberProductsResponse;
 import com.UniRide.Backend.model.Cabs.Uber.UberTimeEstimatesResponse;
 import com.UniRide.Backend.model.RideOption;
 import com.UniRide.Backend.service.Cabs.Ola.OlaService;
 import com.UniRide.Backend.service.Cabs.Ola.ServiceType;
+import com.UniRide.Backend.service.Cabs.Rapido.RapidoService;
 import com.UniRide.Backend.service.Cabs.Uber.UberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.UniRide.Backend.service.Cabs.ServiceProvider.OLA;
+import static com.UniRide.Backend.service.Cabs.ServiceProvider.RAPIDO;
 import static com.UniRide.Backend.service.Cabs.ServiceProvider.UBER;
 
 @Service
@@ -26,11 +29,13 @@ public class RideService {
 
   private final OlaService olaService;
   private final UberService uberService;
+  private final RapidoService rapidoService;
 
   @Autowired
   public RideService(OlaService olaService) {
     this.olaService = olaService;
     this.uberService = uberService;
+    this.rapidoService = rapidoService;
   }
 
   /**
@@ -47,7 +52,12 @@ public class RideService {
     rideOptions.addAll(getUberRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType));
 
     // 3. (Future) Fetch from Rapido
-    // rideOptions.addAll(getRapidoRideOptions(pickupLat, pickupLng, dropLat, dropLng, vehicleType));
+    try {
+      rideOptions.addAll(getRapidoRideOptions(pickupLat, pickupLng, dropLat, dropLng));
+    } catch (Exception e) {
+      // Log the exception in real code. For now, we’ll skip Rapido if there’s an error.
+      e.printStackTrace();
+    }
 
     return rideOptions;
   }
@@ -181,5 +191,68 @@ public class RideService {
     }
 
     return uberRideOptions;
+  }
+
+
+  /**
+   * Fetches ride options from Rapido for the given coordinates.
+   * vehicleType is not used here since Rapido’s vehicle type is bike for now.
+   * Rapido’s model only returns a list of quotes (each with serviceId & amount) plus an ETA.
+   */
+  private List<RideOption> getRapidoRideOptions(
+      double pickupLat, double pickupLng,
+      Double dropLat, Double dropLng
+  ) throws Exception {
+    List<RideOption> rapidoRideOptions = new ArrayList<>();
+
+    // If dropLat/dropLng are missing, Rapido’s endpoint won’t give fare estimates → return empty
+    if (dropLat == null || dropLng == null) {
+      return rapidoRideOptions;
+    }
+
+    // For “address” fields, we’ll just pass empty strings (Rapido doesn’t strictly require a human-readable address)
+    String pickupAddress = "";
+    String dropAddress = "";
+
+    // 1. Call Rapido’s fare + ETA endpoint
+    RapidoFareEstimateResponse response = rapidoService.getFareEstimate(
+        pickupLat, pickupLng, pickupAddress,
+        dropLat, dropLng, dropAddress
+    );
+
+    if (response != null
+        && response.getInfo() != null
+        && "success".equalsIgnoreCase(response.getInfo().getStatus())
+        && response.getData() != null) {
+
+      int etaMinutes = response.getData().getTimeInMts();  // ETA in minutes
+
+      List<RapidoFareEstimateResponse.Quote> quotes = response.getData().getQuotes();
+      if (quotes != null) {
+        for (RapidoFareEstimateResponse.Quote quote : quotes) {
+          // Each quote has a serviceId and amount. Usually serviceId encodes a Rapido sub-service (e.g. “bike” or “auto”).
+          String rapidoServiceId = quote.getServiceId();
+          double amount = quote.getAmount();
+
+          // We’ll treat Rapido as “vehicleType = BIKE” for simplicity.
+          // If you have multiple serviceIds (e.g. “BIKE”, “AUTO”), you can differentiate by serviceId.
+          String vehicle = "bike";
+          //TODO: If Rapido supports multiple vehicle types in the future, we can map serviceId to vehicleType.
+
+          // Build unified RideOption:
+          RideOption option = new RideOption(
+              RAPIDO,
+              vehicle,
+              amount,      // minFare
+              amount,      // maxFare (no range provided)
+              etaMinutes,  // ETA
+              1            // Rapido bike capacity is always 1
+          );
+          rapidoRideOptions.add(option);
+        }
+      }
+    }
+
+    return rapidoRideOptions;
   }
 }
