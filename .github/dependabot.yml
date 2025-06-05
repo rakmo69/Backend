@@ -1,0 +1,12 @@
+# .github/dependabot.yml
+version: 2
+updates:
+  # 1) Maven (Java) dependencies in your Backend folder
+  - package-ecosystem: "maven"
+    directory: "/Backend"       # where your pom.xml lives
+    schedule:
+      interval: "weekly"        # run once a week
+    open-pull-requests-limit: 5 # max open PRs at a time
+    labels:
+      - "dependencies"
+      - "automatic"
